@@ -12,3 +12,12 @@ type Note struct {
 	SubTitle   string
 	Text       string
 }
+type CredentialsJsonLess struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+type Credentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+	JwtToken string `json:"jwt-token"`
+}

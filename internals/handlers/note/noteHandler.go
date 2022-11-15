@@ -158,3 +158,19 @@ func WebSocket(c *websocket.Conn) {
 	}
 
 }
+func Registration(c *fiber.Ctx) error {
+
+	return nil
+}
+
+func Login(c *fiber.Ctx) error {
+	db := database.DB
+	credentials := new(model.CredentialsJsonLess)
+	credentials1 := new(model.CredentialsJsonLess)
+	err := c.BodyParser(credentials)
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "RPeview your input", "data": err})
+	}
+	db.Find(&credentials1.Password, "SELECT password FROM public.\"Auth\" WHERE username=?", credentials.Username)
+	return c.JSON(fiber.Map{"status": "success", "message": "Created Note", "data": credentials1.Password})
+}

@@ -22,4 +22,9 @@ func SetupNoteRoutes(router fiber.Router) {
 	note.Use("/ws", noteHandler.WebSocketUpgrade)
 	// Create WebSocket Endpoint
 	note.Get("/ws/:id", websocket.New(noteHandler.WebSocket))
+	//JWT Registeration
+	note.Post("/register", noteHandler.Registration)
+	//Login with JWT
+	note.Post("/login", noteHandler.Login)
+
 }
