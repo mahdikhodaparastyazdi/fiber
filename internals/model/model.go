@@ -1,6 +1,7 @@
 package model
 
 import (
+	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"gorm.io/gorm"
 )
@@ -20,4 +21,8 @@ type Credentials struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
 	JwtToken string `json:"jwt-token"`
+}
+type Claims struct {
+	Username string `json:"username"`
+	jwt.StandardClaims
 }

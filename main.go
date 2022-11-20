@@ -1,7 +1,6 @@
 package main
 
 import (
-	"febre/database"
 	"febre/router"
 	"github.com/gofiber/fiber/v2"
 )
@@ -11,7 +10,9 @@ func main() {
 	app := fiber.New()
 
 	// Connect to the Database
-	database.ConnectDB()
+	//database.ConnectDB()
+
+	//Connect to the Redis
 
 	// Setup the router
 	router.SetupRoutes(app)

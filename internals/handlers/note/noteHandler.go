@@ -3,22 +3,33 @@ package note
 import (
 	"febre/database"
 	"febre/internals/model"
+	redis "febre/pkg/service"
+	"fmt"
 	"github.com/gofiber/fiber/v2"
 	"github.com/gofiber/websocket/v2"
+	"github.com/golang-jwt/jwt"
 	"github.com/google/uuid"
 	"log"
+	"time"
 )
 
-func GetNotes(c *fiber.Ctx) error {
-	db := database.DB
-	var notes []model.Note
+var users = map[string]string{
+	"user1": "password1",
+	"user2": "password2",
+	"user3": "password3",
+}
 
+func GetNotes(c *fiber.Ctx) error {
+	//db := database.DB
+	var notes []model.Note
+	redis.SetToRedis("bbb")
+	fmt.Println(redis.GetToRedis())
 	// find all notes in the database
-	db.Find(&notes)
+	//db.Find(&notes)
 
 	// If no note is present return an error
 	if len(notes) == 0 {
-		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "No notes present", "data": nil})
+		return c.Status(404).JSON(fiber.Map{"status": "error", "message": "No notes present***", "data": nil})
 	}
 
 	// Else return notes
@@ -159,18 +170,100 @@ func WebSocket(c *websocket.Conn) {
 
 }
 func Registration(c *fiber.Ctx) error {
-
-	return nil
-}
-
-func Login(c *fiber.Ctx) error {
-	db := database.DB
 	credentials := new(model.CredentialsJsonLess)
-	credentials1 := new(model.CredentialsJsonLess)
 	err := c.BodyParser(credentials)
+
 	if err != nil {
 		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "RPeview your input", "data": err})
 	}
-	db.Find(&credentials1.Password, "SELECT password FROM public.\"Auth\" WHERE username=?", credentials.Username)
-	return c.JSON(fiber.Map{"status": "success", "message": "Created Note", "data": credentials1.Password})
+	expirationTime := time.Now().Add(time.Minute * 5)
+	users[credentials.Username] = credentials.Password
+	claims := &model.Claims{
+		Username: credentials.Username,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+			Subject:   "mahdi",
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte("jwtKey"))
+	if err != nil {
+		fmt.Println(err)
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "StatusInternalServerError", "data": err})
+	}
+	return c.JSON(fiber.Map{"status": "success", "message": "Created Note", "data": tokenString})
+}
+
+func Login(c *fiber.Ctx) error {
+	//db := database.DB
+	credentials := new(model.Credentials)
+	err := c.BodyParser(credentials)
+
+	if err != nil {
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "RPeview your input", "data": err})
+	}
+	expectedPassword, ok := users[credentials.Username]
+
+	if !ok || expectedPassword != credentials.Password {
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "StatusUnauthorized", "data": err})
+	} ////////////////
+	expirationTime := time.Now().Add(time.Minute * 5)
+	users[credentials.Username] = credentials.Password
+	claims := &model.Claims{
+		Username: credentials.Username,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: expirationTime.Unix(),
+			Subject:   "mahdi",
+		},
+	}
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	tokenString, err := token.SignedString([]byte("jwtKey"))
+	if err != nil {
+		fmt.Println(err)
+		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "StatusInternalServerError", "data": err})
+	}
+	temp := redis.GetToRedis()
+	fmt.Println(temp)
+	return c.JSON(fiber.Map{"status": "success", "message": temp, "data": tokenString})
+
+	//tokenStr := credentials.JwtToken
+	//claims := &model.Claims{}
+	//
+	//tkn, err := jwt.ParseWithClaims(tokenStr, claims, func(t *jwt.Token) (interface{}, error) {
+	//	return []byte("jwtKey"), nil
+	//})
+	//if err != nil {
+	//	if err == jwt.ErrSignatureInvalid {
+	//
+	//		return c.Status(500).JSON(fiber.Map{"status": "error", "message": "StatusUnauthorized", "data": err})
+	//	}
+	//	return c.Status(500).JSON(fiber.Map{"status": "error", "message": "StatusBadRequest", "data": err})
+	//
+	//}
+	//if !tkn.Valid {
+	//	return c.Status(500).JSON(fiber.Map{"status": "error", "message": "StatusUnauthorized", "data": err})
+	//}
+	////database.SetToRedis(client, "aaa")
+	//return c.JSON(fiber.Map{"status": credentials.Username, "message": "Created Note", "data": "hello"})
+	//////////////
+	//expirationTime := time.Now().Add(time.Minute * 5)
+
+	//claims := &model.Claims{
+	//	Username: credentials.Username,
+	//	StandardClaims: jwt.StandardClaims{
+	//		ExpiresAt: expirationTime.Unix(),
+	//		Subject:   "mahdi",
+	//	},
+	//}
+	//
+	//token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	//tokenString, err := token.SignedString([]byte("jwtKey"))
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return c.Status(500).JSON(fiber.Map{"status": "error", "message": "StatusInternalServerError", "data": err})
+	//}
+	//db.Find(&credentials1.Password, "SELECT password FROM public.\"Auth\" WHERE username=?", credentials.Username)
+	//return c.JSON(fiber.Map{"status": "success", "message": "Created Note", "data": tokenString})
 }
